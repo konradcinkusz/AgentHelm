@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build *)",
+      "Bash(dotnet test *)",
+      "Bash(docker version *)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(timeout 40 dotnet run --project src/AgentHelm.AppHost/AgentHelm.AppHost.csproj)",
+      "Bash(timeout 40 dotnet run --project src/AgentHelm.AppHost/AgentHelm.AppHost.csproj --launch-profile https)",
+      "Bash(dotnet run *)",
+      "Bash(echo \"started pid $!\")",
+      "Bash(docker volume *)",
+      "Bash(docker run *)",
+      "Bash(taskkill //F //IM dotnet.exe //FI \"WINDOWTITLE eq *\")",
+      "Bash(jobs -l)",
+      "Bash(docker rm *)",
+      "Bash(docker volume rm *)",
+      "Bash(kill 92 *)",
+      "Bash(kill 869)",
+      "Bash(echo \"exit:$?\")",
+      "Bash(powershell -Command \"[guid]::NewGuid\\(\\).ToString\\(\\)\")",
+      "Read(//proc/sys/kernel/random/**)",
+      "Bash(python3 -c \"import uuid; print\\(uuid.uuid4\\(\\)\\)\")",
+      "Bash(xargs -r docker rm -f)",
+      "Bash(kill 1739)"
+    ]
+  }
+}

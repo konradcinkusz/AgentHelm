@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Aspire ships as a NuGet MSBuild SDK since 9.0 — NO workload required.
+       This Sdk element is what makes the deprecation error go away; without
+       it, IsAspireHost falls back to the removed workload resolution.
+       The Sdk element version and the Aspire.Hosting.* package versions must
+       always move TOGETHER. Requires .NET SDK 8.0.303+ (or any 9.x/10.x). -->
+  <Sdk Name="Aspire.AppHost.Sdk" Version="9.3.0" />
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsAspireHost>true</IsAspireHost>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Required so Aspire can persist the generated postgres password to user
+         secrets across runs. WithDataVolume keeps the Postgres data directory
+         (and the password baked into it) around between runs; without a
+         UserSecretsId, Aspire regenerates a random password every launch,
+         which no longer matches the volume's already-initialized password
+         and every connection fails with "password authentication failed". -->
+    <UserSecretsId>526df2c2-0ede-4069-94f1-c6e8fe4cb6c5</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.3.0" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="9.3.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AgentHelm.Bridge\AgentHelm.Bridge.csproj" />
+    <ProjectReference Include="..\AgentHelm.Web\AgentHelm.Web.csproj" />
+  </ItemGroup>
+</Project>
