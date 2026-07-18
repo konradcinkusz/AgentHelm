@@ -5,3 +5,6 @@ obj/
 *.user
 TestResults/
 .idea/
+.env
+.env.local
+.env.*.local
