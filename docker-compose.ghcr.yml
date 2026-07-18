@@ -29,6 +29,13 @@ services:
     environment:
       ConnectionStrings__helmdb: "Host=postgres;Database=helmdb;Username=helm;Password=helm-dev"
       AgentHelm__ApiToken: "dev-secret-123"
+    # Mount your local repos so AgentHelm can use them as working directories.
+    # The Bridge validates paths against its own filesystem (the container), not your host.
+    # Uncomment and adjust the volumes block below, then use the container path in the UI
+    # (e.g. /repos/CopilotScope instead of C:\Repos\CopilotScope).
+    # volumes:
+    #   - C:\Repos:/repos        # Windows — maps C:\Repos to /repos inside the container
+    #   - /home/you/repos:/repos  # Linux / macOS
     depends_on:
       postgres:
         condition: service_healthy

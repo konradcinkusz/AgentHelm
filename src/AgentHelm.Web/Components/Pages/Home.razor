@@ -36,6 +36,7 @@
                         <input class="cwd-input" placeholder="Working directory (repo path)" @bind="_newCwd" />
                         <button class="btn cwd-browse" title="Browse directories" @onclick="OpenBrowseAsync">📁</button>
                     </div>
+                    <div class="term-note">Path on the Bridge server. Docker users: add <code>volumes:</code> to docker-compose (e.g. <code>- C:\Repos:/repos</code>) and enter the container path here.</div>
                     <input placeholder="Title (optional)" @bind="_newTitle" />
                     <input placeholder="Model (optional — SDK agents)" @bind="_newModel" />
                     <button class="btn preconfig-toggle @(_showPreconfig ? "active" : "")"
