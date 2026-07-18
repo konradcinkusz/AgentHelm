@@ -3,6 +3,14 @@
 <p align="center">
   <img src="assets/logo.svg" alt="AgentHelm logo" width="96" height="96"/>
 </p>
+[![build containers](https://github.com/konradcinkusz/agenthelm/actions/workflows/build-containers.yml/badge.svg)](https://github.com/konradcinkusz/agenthelm/actions/workflows/build-containers.yml)
+[![CI](https://github.com/konradcinkusz/agenthelm/actions/workflows/ci.yml/badge.svg)](https://github.com/konradcinkusz/agenthelm/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-e0a458.svg)](LICENSE)
+[![Latest Release](https://img.shields.io/github/v/release/konradcinkusz/agenthelm?color=e0a458)](https://github.com/konradcinkusz/agenthelm/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/konradcinkusz/agenthelm/total?color=6cc5a1)](https://github.com/konradcinkusz/agenthelm/releases)
+[![GitHub Stars](https://img.shields.io/github/stars/konradcinkusz/agenthelm?style=social)](https://github.com/konradcinkusz/agenthelm/stargazers)
+[![Docker](https://img.shields.io/badge/Docker-GHCR-2496ED?logo=docker&logoColor=white)](https://github.com/konradcinkusz/agenthelm/pkgs/container/agenthelm-bridge)
+[![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/download/dotnet/8.0)
 
 **A web cockpit for AI coding agents.** One GUI to drive GitHub Copilot CLI,
 Claude Code, Gemini CLI — and any of the ~50 agents speaking the
@@ -32,7 +40,32 @@ MSBuild SDK — no `aspire` workload; if you installed it in the past you can
 `dotnet workload uninstall aspire`). Docker only if you want persistent
 history (Postgres); everything else runs without it.
 
-### Option 0 — release zip (no build)
+### Option 0 — containers, no clone (GHCR)
+
+Each GitHub release publishes two images to GHCR (see `.github/workflows/build-containers.yml`).
+Users don't need the repository at all:
+
+```bash
+# Linux / macOS / Git Bash:
+curl -O https://raw.githubusercontent.com/konradcinkusz/agenthelm/master/docker-compose.ghcr.yml
+# Windows PowerShell:
+curl.exe -O https://raw.githubusercontent.com/konradcinkusz/agenthelm/master/docker-compose.ghcr.yml
+
+docker compose -f docker-compose.ghcr.yml up
+```
+
+UI at **http://localhost:5200** · Bridge API at **http://localhost:5199**.
+
+One-time setup after the first workflow run: GHCR packages start private —
+switch each package to **public** (GitHub → Packages → package → Settings)
+so anonymous `docker pull` works.
+
+> **Constraint:** ACP agents (Copilot CLI, Claude Code, Gemini) run as local
+> subprocesses and cannot reach your host environment from inside a container.
+> The built-in **echo agent** is included in the Bridge image and works out of
+> the box. For real agents use Option A or B below.
+
+### Option 0b — release zip (no build)
 
 Download the latest zip from Releases, unpack, then `./run.sh` (or
 `.\run.ps1`). Bridge starts on `127.0.0.1:5199`, the UI on
@@ -239,6 +272,10 @@ silently drops agents declared without an `Args` section — fixed by making
 ```bash
 dotnet test
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the dev setup, project layout, architecture notes, and how to submit a PR.
 
 ## License
 
