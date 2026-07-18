@@ -1,0 +1,49 @@
+# Pull-and-run — NO repository clone needed. Download just this file:
+#   Linux/macOS/Git Bash: curl -O https://raw.githubusercontent.com/konradcinkusz/agenthelm/master/docker-compose.ghcr.yml
+#   Windows PowerShell:   curl.exe -O https://raw.githubusercontent.com/konradcinkusz/agenthelm/master/docker-compose.ghcr.yml
+#   docker compose -f docker-compose.ghcr.yml up
+# UI: http://localhost:5200 · Bridge API: http://localhost:5199 (x-helm-token: dev-secret-123)
+#
+# Note: ACP agents (Copilot CLI, Claude Code, Gemini) are NOT available in
+# containers — they need your local binaries and auth. The built-in echo agent
+# is included and works out of the box for testing the UI and permission flow.
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: helmdb
+      POSTGRES_USER: helm
+      POSTGRES_PASSWORD: helm-dev
+    volumes:
+      - agenthelm-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U helm -d helmdb"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  bridge:
+    image: ghcr.io/konradcinkusz/agenthelm-bridge:latest
+    ports:
+      - "5199:5199"
+    environment:
+      ConnectionStrings__helmdb: "Host=postgres;Database=helmdb;Username=helm;Password=helm-dev"
+      AgentHelm__ApiToken: "dev-secret-123"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    image: ghcr.io/konradcinkusz/agenthelm-web:latest
+    ports:
+      - "5200:8080"
+    environment:
+      Bridge__BaseUrl: "http://bridge:5199"
+      Bridge__ApiToken: "dev-secret-123"
+    depends_on:
+      - bridge
+    restart: unless-stopped
+
+volumes:
+  agenthelm-pgdata:
