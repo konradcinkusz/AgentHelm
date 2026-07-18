@@ -20,15 +20,20 @@ public sealed record ScopeSessionScore(
 
 public sealed class ScopeClient
 {
-    private readonly HttpClient? _http;
+    private readonly object _lock = new();
+    private HttpClient? _http;
+    private string _baseUrl;
     private readonly ILogger<ScopeClient> _logger;
     private DateTimeOffset _backoffUntil = DateTimeOffset.MinValue;
+
+    public string BaseUrl => _baseUrl;
 
     public ScopeClient(IConfiguration configuration, ILogger<ScopeClient> logger)
     {
         _logger = logger;
         var baseUrl = configuration["AgentHelm:Scope:BaseUrl"];
         if (string.IsNullOrWhiteSpace(baseUrl)) baseUrl = "http://localhost:4318";
+        _baseUrl = baseUrl;
         if (baseUrl == "disabled") return;
         _http = new HttpClient
         {
@@ -37,13 +42,30 @@ public sealed class ScopeClient
         };
     }
 
+    /// <summary>Updates the CopilotScope base URL at runtime without a Bridge restart.</summary>
+    public void UpdateBaseUrl(string url)
+    {
+        lock (_lock)
+        {
+            _baseUrl = url;
+            _http = url == "disabled" ? null : new HttpClient
+            {
+                BaseAddress = new Uri(url),
+                Timeout = TimeSpan.FromSeconds(3)
+            };
+            _backoffUntil = DateTimeOffset.MinValue;
+        }
+    }
+
     /// <summary>Recent Scope sessions, or null when Scope is unreachable/disabled.</summary>
     public async Task<List<ScopeSessionScore>?> RecentAsync(CancellationToken ct)
     {
-        if (_http is null || DateTimeOffset.UtcNow < _backoffUntil) return null;
+        HttpClient? http;
+        lock (_lock) { http = _http; }
+        if (http is null || DateTimeOffset.UtcNow < _backoffUntil) return null;
         try
         {
-            var raw = await _http.GetStringAsync("/api/sessions", ct);
+            var raw = await http.GetStringAsync("/api/sessions", ct);
             return ParseSessions(raw);
         }
         catch (Exception ex)

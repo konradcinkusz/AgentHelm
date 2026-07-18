@@ -43,6 +43,8 @@ public sealed record ArchivedSessionDto(
 
 public sealed record SessionEventDto(string Kind, string Text, JsonElement? Data);
 
+public sealed record DirListDto(string Path, string? Parent, string[] Dirs);
+
 public sealed class BridgeClient
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
@@ -197,6 +199,35 @@ public sealed class BridgeClient
     /// </summary>
     public Task SubscribeAsync(string id, Func<SessionEventDto, Task> onEvent, CancellationToken ct) =>
         ReadSseAsync($"/api/sessions/{id}/stream", onEvent, ct);
+
+    // ------------------------------------------------- filesystem browser
+    public async Task<DirListDto> GetDirectoriesAsync(string? path, CancellationToken ct = default)
+    {
+        try
+        {
+            var url = string.IsNullOrWhiteSpace(path)
+                ? "/api/fs/dirs"
+                : $"/api/fs/dirs?path={Uri.EscapeDataString(path)}";
+            return await _http.GetFromJsonAsync<DirListDto>(url, Json, ct) ?? new("", null, []);
+        }
+        catch { return new("", null, []); }
+    }
+
+    // ------------------------------------------------- runtime config
+    public async Task<string> GetScopeUrlAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            var result = await _http.GetFromJsonAsync<ScopeConfigDto>("/api/config", Json, ct);
+            return result?.ScopeUrl ?? "http://localhost:4318";
+        }
+        catch { return "http://localhost:4318"; }
+    }
+
+    public Task SetScopeUrlAsync(string url, CancellationToken ct = default) =>
+        _http.PostAsJsonAsync("/api/config/scope-url", new { url }, Json, ct);
+
+    private sealed record ScopeConfigDto(string ScopeUrl);
 
     private async Task ReadSseAsync(string url, Func<SessionEventDto, Task> onEvent, CancellationToken ct)
     {

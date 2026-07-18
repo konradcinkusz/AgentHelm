@@ -312,6 +312,46 @@ api.MapGet("/sessions/{id}/scope", async (string id, CancellationToken ct) =>
 
 api.MapGet("/health", () => Results.Ok(new { status = "ok", sessions = sessions.All.Count }));
 
+// ------------------------------------------------- filesystem directory browser
+api.MapGet("/fs/dirs", (string? path) =>
+{
+    if (string.IsNullOrWhiteSpace(path))
+    {
+        var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        if (!string.IsNullOrEmpty(homeDir) && Directory.Exists(homeDir))
+            path = homeDir;
+        else
+            path = "/";
+    }
+
+    path = Path.GetFullPath(path);
+    if (!Directory.Exists(path))
+        return Results.BadRequest(new { error = $"Directory not found: {path}" });
+
+    string[] names;
+    try
+    {
+        names = Directory.GetDirectories(path)
+            .Select(d => Path.GetFileName(d) ?? d)
+            .OrderBy(d => d, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+    catch (UnauthorizedAccessException) { names = []; }
+
+    var parent = Path.GetDirectoryName(path);
+    return Results.Ok(new { path, parent, dirs = names });
+});
+
+// ---------------------------------------- runtime config (scope URL, etc.)
+api.MapGet("/config", () => Results.Ok(new { scopeUrl = scope.BaseUrl }));
+api.MapPost("/config/scope-url", (ScopeUrlRequest req) =>
+{
+    if (string.IsNullOrWhiteSpace(req.Url))
+        return Results.BadRequest(new { error = "URL is required." });
+    scope.UpdateBaseUrl(req.Url.Trim());
+    return Results.Ok(new { scopeUrl = scope.BaseUrl });
+});
+
 logger.LogInformation("""
     AgentHelm Bridge started.
       API        : GET/POST /api/sessions · SSE /api/sessions/{{id}}/stream
@@ -332,6 +372,7 @@ record GitPathRequest(string Path);
 record HandoffRequest(string AgentId, string? Title);
 record TerminalInputRequest(string Text);
 record PermissionDecision(string RequestKey, bool Allow, string? OptionId);
+record ScopeUrlRequest(string Url);
 
 partial class Program
 {
