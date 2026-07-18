@@ -1,5 +1,8 @@
 # AgentHelm
 
+<p align="center">
+  <img src="assets/logo.svg" alt="AgentHelm logo" width="96" height="96"/>
+</p>
 [![build containers](https://github.com/konradcinkusz/agenthelm/actions/workflows/build-containers.yml/badge.svg)](https://github.com/konradcinkusz/agenthelm/actions/workflows/build-containers.yml)
 [![CI](https://github.com/konradcinkusz/agenthelm/actions/workflows/ci.yml/badge.svg)](https://github.com/konradcinkusz/agenthelm/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-e0a458.svg)](LICENSE)
@@ -18,6 +21,8 @@ transcripts, explicit tool permissions, and an audit trail.
 > **Scope observes** (what was that session worth?), **Helm steers** (run the
 > session, approve the tools, keep the record). Same stack, opposite direction
 > of the arrow.
+
+**[→ Step-by-step tutorial](docs/TUTORIAL.md)** | **[Contributing](CONTRIBUTING.md)**
 
 **Status: M3 (feature-complete for the planned roadmap)** — sessions,
 streamed chat, permission policies (ask / auto-read / YOLO), session resume

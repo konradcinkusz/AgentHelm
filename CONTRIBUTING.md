@@ -1,94 +1,77 @@
 # Contributing to AgentHelm
 
-Thank you for your interest in AgentHelm! This document describes how to set up a development environment, run tests, and submit changes.
+Thank you for your interest in contributing. This guide covers everything you need to get started.
 
 ## Prerequisites
 
-| Tool | Version | Notes |
-|---|---|---|
-| [.NET SDK](https://dotnet.microsoft.com/download/dotnet/8.0) | 8.0.303+ | `dotnet --version` to verify — must be 8.0.303+ for the Aspire SDK element |
-| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | any recent | needed for Postgres + pgAdmin containers via Aspire |
-| (optional) ACP agent | any | GitHub Copilot CLI, Claude Code, or Gemini CLI for end-to-end testing |
+- .NET SDK **8.0.303 or newer** (`dotnet --version`)
+- Docker (optional — only needed for the Postgres history backend)
+- Node.js (optional — only needed to test the Claude Code ACP adapter)
 
-No `aspire` workload — this repo uses the SDK-based setup (`<Sdk Name="Aspire.AppHost.Sdk" .../>`) so the workload is not required. If you installed it before, `dotnet workload uninstall aspire` removes it.
-
-## Quick dev loop
+## Setting up the dev environment
 
 ```bash
-# clone
-git clone https://github.com/konradcinkusz/agenthelm.git
-cd agenthelm
+git clone https://github.com/konradcinkusz/AgentHelm.git
+cd AgentHelm
 
-# restore & build everything (including AppHost)
-dotnet build AgentHelm.sln -c Release
-
-# run the full stack (Postgres + Bridge + Web via Aspire)
+# Option A — with Aspire (starts Postgres + Bridge + Web automatically)
 dotnet run --project src/AgentHelm.AppHost
 
-# the Aspire dashboard URL is printed in the console;
-# the Web UI URL is shown as the "web" resource endpoint
+# Option B — without Docker
+dotnet run --project src/AgentHelm.Bridge   # http://127.0.0.1:5199
+dotnet run --project src/AgentHelm.Web      # http://127.0.0.1:5200
 ```
 
-The built-in echo agent works immediately — no external agent required. To test a real agent, have it on your PATH and start a new session selecting it from the catalog.
+The built-in echo agent works without any external tools, so you can test the full permission/audit loop immediately.
 
 ## Running tests
 
 ```bash
-dotnet test tests/AgentHelm.Tests -c Release --logger "console;verbosity=normal"
+dotnet test
 ```
 
-All tests live in `tests/AgentHelm.Tests`. They run without Docker or a live agent.
+41 tests covering the ACP client, session layer, policy engine, git service, terminal, agent handoff, Scope integration, and more. All tests should pass before you open a PR.
 
 ## Project layout
 
 ```
 src/
-  AgentHelm.AppHost/   Aspire orchestration (Postgres container, Bridge + Web as local processes)
-  AgentHelm.Bridge/    Session management, ACP protocol client, permission gateway, REST API, SSE
-  AgentHelm.Web/       Blazor Server UI (sessions, transcript, git diff, terminal, history)
+  AgentHelm.AppHost   .NET Aspire orchestrator
+  AgentHelm.Bridge    ASP.NET Core API backend (sessions, ACP, permissions, git)
+  AgentHelm.Web       Blazor Server frontend
 tests/
-  AgentHelm.Tests/     xUnit — ACP protocol, sessions, policy engine, git service, terminal, handoff
+  AgentHelm.Tests     xUnit test suite
 tools/
-  AgentHelm.EchoAgent/ Built-in demo ACP agent (also included in the Bridge Docker image)
+  AgentHelm.EchoAgent Built-in demo ACP agent
 ```
 
-## Container development
+## How to contribute
 
-```bash
-# Build and run the full stack from source (no .NET SDK needed at runtime):
-docker compose up --build
-
-# UI at http://localhost:5200 · Bridge at http://localhost:5199
-```
-
-See `Dockerfile`, `Dockerfile.web`, and `docker-compose.yml` for details.
-Only the built-in echo agent is available inside containers — real ACP agents
-(Copilot CLI, Claude Code, Gemini) need your local environment and credentials.
-
-## Submitting changes
-
-1. **Fork** the repository and create a feature branch from `main`.
-2. Keep changes focused — one logical change per PR.
-3. Add or update tests for any new logic in `AgentHelm.Bridge`.
-4. Run `dotnet test` and `dotnet build AgentHelm.sln` before pushing.
-5. Open a pull request against `main`. The PR description should explain *why* the change is needed, not just what it does.
-
-## Architecture notes
-
-- **Bridge binds to loopback (`127.0.0.1:5199`) by default.** This is a security constraint — ACP agents are local subprocesses with access to your repositories and credentials. Exposing the Bridge further requires an explicit `AgentHelm:Urls` override and an `AgentHelm:ApiToken`. Container deployments set `AgentHelm__Urls=http://0.0.0.0:5199` automatically (see `Dockerfile`) but should always be run with a token.
-- **Session aggregation** happens in `HelmSession` inside `SessionManager`. Transcript mutations are lock-guarded; permission resolution blocks the agent turn until the user decides.
-- **Policy engine** (`PermissionPolicies`) — `ask` (default), `auto_read`, `yolo`. `auto_read` never auto-allows `fetch` (network exfiltration risk). `yolo` requires explicit per-session confirmation and audits every auto-decision.
-- **ACP adapter** (`AcpAdapter`) decodes JSON-RPC over stdio; the `IAgentAdapter` seam keeps protocol details out of sessions and UI.
-- **Persistence** (`SessionRepository`) stores a JSONB snapshot per session in Postgres. The `PersistenceWriter` upserts on a 1 s write-behind; a Postgres outage degrades to memory-only without blocking the agent.
-- **Git endpoints** hard-guard every path to the session's `Cwd` — the Bridge re-derives tracked/untracked status server-side, never trusting the request.
+1. **Open an issue first** for any non-trivial change — a quick conversation avoids duplicate work.
+2. Fork the repo and create a branch: `git checkout -b your-feature`.
+3. Make your changes. Keep commits focused; one logical change per commit is easier to review.
+4. Add or update tests for any new behaviour. The test suite is the specification.
+5. Run `dotnet test` — all tests must pass.
+6. Open a pull request against `master`. Describe *why* the change is needed, not just what it does.
 
 ## Code style
 
-- C# 12 / .NET 8 idioms (primary constructors, collection expressions, pattern switches).
-- No XML doc comments except on non-obvious public APIs.
-- No abbreviations unless domain-standard (`acp`, `pty`, `sse`, `cwd`).
-- Records for DTOs and value objects; mutable classes only for aggregates that need lock-guarded mutation (`HelmSession`, `SessionManager`).
+- Standard C# formatting; nullable reference types are enabled — keep it that way.
+- No unnecessary comments. The code is the documentation; add a comment only when the *why* is not obvious from the code.
+- The `IAgentAdapter` seam is intentional — new agent adapters belong there, not scattered across the session layer.
 
-## Questions / ideas
+## Reporting bugs
 
-Open a [GitHub Discussion](https://github.com/konradcinkusz/agenthelm/discussions) for design questions or feature proposals before writing a large PR. Bug reports go to [Issues](https://github.com/konradcinkusz/agenthelm/issues).
+Open a GitHub issue with:
+- Steps to reproduce (exact commands / clicks)
+- Expected vs. actual behaviour
+- .NET SDK version (`dotnet --version`) and OS
+- Relevant Bridge or Web logs (start both processes; logs go to stdout)
+
+## Feature requests
+
+Open a GitHub issue describing the use case. The roadmap is tracked in the README — check there first to see if the idea is already planned.
+
+## License
+
+By contributing you agree that your changes will be licensed under the [MIT License](LICENSE).
