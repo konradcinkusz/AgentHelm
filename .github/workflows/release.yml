@@ -37,7 +37,7 @@ jobs:
 
       - name: Assemble zip
         run: |
-          cp scripts/run.sh scripts/run.ps1 README.md LICENSE dist/
+          cp scripts/run.sh scripts/run.ps1 README.md LICENSE CONTRIBUTING.md docker-compose.ghcr.yml dist/
           chmod +x dist/run.sh
           cd dist && zip -rq ../agenthelm-${GITHUB_REF_NAME}.zip .
 
