@@ -32,10 +32,24 @@
                             <option value="@agent.Id">@agent.Name</option>
                         }
                     </select>
-                    <input placeholder="Working directory (repo path)" @bind="_newCwd" />
+                    <div class="cwd-row">
+                        <input class="cwd-input" placeholder="Working directory (repo path)" @bind="_newCwd" />
+                        <button class="btn cwd-browse" title="Browse directories" @onclick="OpenBrowseAsync">📁</button>
+                    </div>
                     <input placeholder="Title (optional)" @bind="_newTitle" />
-                <input placeholder="Model (optional — SDK agents)" @bind="_newModel" />
-                    <button class="btn primary" disabled="@_creating" @onclick="CreateSessionAsync">
+                    <input placeholder="Model (optional — SDK agents)" @bind="_newModel" />
+                    <button class="btn preconfig-toggle @(_showPreconfig ? "active" : "")"
+                            @onclick="TogglePreconfigAsync">⚙ Pre-config</button>
+                    @if (_showPreconfig)
+                    {
+                        <div class="preconfig-panel">
+                            <label class="preconfig-label">OTel endpoint <span class="preconfig-hint">(GitHub Copilot / CopilotScope)</span></label>
+                            <input placeholder="http://localhost:4318" @bind="_preconfigOtelUrl" />
+                            <div class="term-note">Where the agent exports telemetry. Applied when starting the session.</div>
+                        </div>
+                    }
+                    <button class="btn primary" disabled="@(_creating || string.IsNullOrWhiteSpace(_newCwd))"
+                            @onclick="CreateSessionAsync">
                         @(_creating ? "Starting…" : "Start session")
                     </button>
                     @if (_createError is not null)
@@ -346,3 +360,59 @@
         }
     </section>
 </div>
+
+@if (_browseOpen)
+{
+    <div class="dir-overlay" @onclick="CloseBrowse">
+        <div class="dir-dialog" @onclick:stopPropagation>
+            <div class="dir-dialog-head">
+                <span class="rail-label">Browse Directory</span>
+                <label class="dir-hidden-toggle">
+                    <input type="checkbox" checked="@_browseShowHidden" @onchange="ToggleBrowseHiddenAsync" />
+                    Show hidden
+                </label>
+                <button class="btn" @onclick="CloseBrowse">✕</button>
+            </div>
+
+            <div class="dir-path-bar">
+                @if (!string.IsNullOrEmpty(_browseParent))
+                {
+                    <button class="btn dir-nav" @onclick='() => NavigateBrowseAsync(_browseParent)'>↑ Up</button>
+                }
+                <button class="btn dir-nav" @onclick='() => NavigateBrowseAsync(null)'>🏠 Home</button>
+                <button class="btn dir-nav" @onclick='() => NavigateBrowseAsync("/")'>/ Root</button>
+                <span class="dir-current-path" title="@_browsePath">
+                    @(string.IsNullOrEmpty(_browsePath) ? "Quick access" : _browsePath)
+                </span>
+            </div>
+
+            <div class="dir-list">
+                @if (_browseLoading)
+                {
+                    <div class="dir-loading">Loading…</div>
+                }
+                else if (_browseDirs.Length == 0)
+                {
+                    <div class="dir-empty">No subdirectories here.</div>
+                }
+                else
+                {
+                    @foreach (var dir in _browseDirs)
+                    {
+                        <button class="dir-item" @onclick='() => BrowseIntoAsync(dir)'>
+                            <span class="dir-icon">📁</span><span class="dir-name">@dir</span>
+                        </button>
+                    }
+                }
+            </div>
+
+            <div class="dir-dialog-foot">
+                <button class="btn primary" disabled="@(string.IsNullOrEmpty(_browsePath) || _browseLoading)"
+                        @onclick="SelectBrowsedDir">
+                    Select this directory
+                </button>
+                <button class="btn" @onclick="CloseBrowse">Cancel</button>
+            </div>
+        </div>
+    </div>
+}

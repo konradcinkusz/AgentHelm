@@ -59,6 +59,18 @@ public partial class Home : IDisposable
     private bool _termIsPty;
     private CancellationTokenSource? _termCts;
 
+    // directory browser
+    private bool _browseOpen;
+    private string _browsePath = "";
+    private string? _browseParent;
+    private string[] _browseDirs = [];
+    private bool _browseLoading;
+    private bool _browseShowHidden;
+
+    // preconfiguration panel
+    private bool _showPreconfig;
+    private string _preconfigOtelUrl = "";
+
     // M3: handoff + scope
     private bool _handoffOpen;
     private string _handoffAgentId = "";
@@ -111,6 +123,9 @@ public partial class Home : IDisposable
         _createError = null;
         try
         {
+            if (_showPreconfig && !string.IsNullOrWhiteSpace(_preconfigOtelUrl))
+                await Bridge.SetScopeUrlAsync(_preconfigOtelUrl.Trim(), _pageCts.Token);
+
             var (session, error) = await Bridge.CreateSessionAsync(_newAgentId, _newCwd.Trim(), _newTitle,
                 string.IsNullOrWhiteSpace(_newModel) ? null : _newModel.Trim(), _pageCts.Token);
             if (session is null)
@@ -384,6 +399,60 @@ public partial class Home : IDisposable
         _detail?.Caps is { Image: false, EmbeddedContext: false }
             ? "This agent advertises no attachment support — it may reject them"
             : "Attach images or text files (max 4 × 2 MB)";
+
+    // ---------------------------------------------------- directory browser
+
+    private async Task OpenBrowseAsync()
+    {
+        _browseOpen = true;
+        var startPath = string.IsNullOrWhiteSpace(_newCwd) ? null : _newCwd.Trim();
+        await NavigateBrowseAsync(startPath);
+    }
+
+    private async Task NavigateBrowseAsync(string? path)
+    {
+        _browseLoading = true;
+        await InvokeAsync(StateHasChanged);
+        var result = await Bridge.GetDirectoriesAsync(path, _pageCts.Token);
+        _browsePath = result.Path;
+        _browseParent = result.Parent;
+        _browseDirs = _browseShowHidden
+            ? result.Dirs
+            : result.Dirs.Where(d => !d.StartsWith('.')).ToArray();
+        _browseLoading = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private Task BrowseIntoAsync(string dirName)
+    {
+        var full = string.IsNullOrEmpty(_browsePath)
+            ? dirName
+            : System.IO.Path.Combine(_browsePath, dirName);
+        return NavigateBrowseAsync(full);
+    }
+
+    private async Task ToggleBrowseHiddenAsync()
+    {
+        _browseShowHidden = !_browseShowHidden;
+        await NavigateBrowseAsync(_browsePath);
+    }
+
+    private void SelectBrowsedDir()
+    {
+        _newCwd = _browsePath;
+        _browseOpen = false;
+    }
+
+    private void CloseBrowse() => _browseOpen = false;
+
+    // --------------------------------------------------- preconfiguration
+
+    private async Task TogglePreconfigAsync()
+    {
+        _showPreconfig = !_showPreconfig;
+        if (_showPreconfig && string.IsNullOrEmpty(_preconfigOtelUrl))
+            _preconfigOtelUrl = await Bridge.GetScopeUrlAsync(_pageCts.Token);
+    }
 
     // --------------------------------------------------------------- handoff
 

@@ -208,6 +208,71 @@ body {
 .scope-grade { font-family: var(--mono); font-size: 11px; color: var(--ok); text-transform: uppercase; letter-spacing: 1px; }
 .scope-meta { font-family: var(--mono); font-size: 11px; color: var(--dim); }
 
+/* ------------------------------------------------------- directory browser */
+.cwd-row { display: flex; gap: 6px; }
+.cwd-input { flex: 1; background: var(--ink); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; font-size: 12px; min-width: 0; }
+.cwd-browse { padding: 7px 10px; font-size: 14px; flex-shrink: 0; }
+
+.preconfig-toggle { font-family: var(--mono); font-size: 11px; letter-spacing: 0.5px; }
+.preconfig-toggle.active { border-color: var(--copper); color: var(--copper); }
+.preconfig-panel {
+  display: flex; flex-direction: column; gap: 6px;
+  background: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+}
+.preconfig-label { font-family: var(--mono); font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; }
+.preconfig-hint { text-transform: none; letter-spacing: 0; color: color-mix(in srgb, var(--copper) 70%, var(--dim)); }
+.preconfig-panel input {
+  background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
+  border-radius: 6px; padding: 7px 9px; font-size: 12px; font-family: var(--mono);
+}
+.preconfig-panel input:focus { outline: none; border-color: var(--copper); }
+
+.dir-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0, 0, 0, .55); backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center;
+}
+.dir-dialog {
+  background: var(--panel); border: 1px solid var(--copper); border-radius: 12px;
+  width: min(600px, 95vw); max-height: 80vh;
+  display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, .6);
+}
+.dir-dialog-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px; border-bottom: 1px solid var(--line);
+}
+.dir-dialog-head .rail-label { flex: 1; }
+.dir-hidden-toggle {
+  display: flex; align-items: center; gap: 5px;
+  font-family: var(--mono); font-size: 11px; color: var(--dim); cursor: pointer;
+}
+.dir-hidden-toggle input { accent-color: var(--copper); cursor: pointer; }
+.dir-path-bar {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel-2);
+}
+.dir-nav { padding: 5px 10px; font-size: 11px; font-family: var(--mono); }
+.dir-current-path {
+  font-family: var(--mono); font-size: 11px; color: var(--copper);
+  flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  min-width: 0;
+}
+.dir-list { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 2px; }
+.dir-item {
+  display: flex; align-items: center; gap: 10px; text-align: left;
+  background: none; color: var(--text); border: 1px solid transparent;
+  border-radius: 6px; padding: 8px 12px; cursor: pointer; font-size: 13px; width: 100%;
+}
+.dir-item:hover { background: var(--panel-2); border-color: var(--line); }
+.dir-icon { font-size: 14px; flex-shrink: 0; }
+.dir-name { font-family: var(--mono); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dir-loading, .dir-empty { color: var(--dim); font-family: var(--mono); font-size: 12px; padding: 20px; text-align: center; }
+.dir-dialog-foot {
+  display: flex; gap: 10px; padding: 14px 16px; border-top: 1px solid var(--line);
+  background: var(--panel-2);
+}
+
 /* ---------------------------------------------------------- title editing */
 .title-edit {
   background: none; border: none; color: var(--dim); cursor: pointer;
