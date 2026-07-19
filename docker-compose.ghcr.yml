@@ -2,7 +2,7 @@
 #   Linux/macOS/Git Bash: curl -O https://raw.githubusercontent.com/konradcinkusz/agenthelm/master/docker-compose.ghcr.yml
 #   Windows PowerShell:   curl.exe -O https://raw.githubusercontent.com/konradcinkusz/agenthelm/master/docker-compose.ghcr.yml
 #   docker compose -f docker-compose.ghcr.yml up
-# UI: http://localhost:5200 · Bridge API: http://localhost:5199 (x-helm-token: dev-secret-123)
+# UI: http://localhost:5300 · Bridge API: http://localhost:5299 (x-helm-token: dev-secret-123)
 #
 # Note: ACP agents (Copilot CLI, Claude Code, Gemini) are NOT available in
 # containers — they need your local binaries and auth. The built-in echo agent
@@ -25,7 +25,7 @@ services:
   bridge:
     image: ghcr.io/konradcinkusz/agenthelm-bridge:latest
     ports:
-      - "5199:5199"
+      - "5299:5199"
     environment:
       ConnectionStrings__helmdb: "Host=postgres;Database=helmdb;Username=helm;Password=helm-dev"
       AgentHelm__ApiToken: "dev-secret-123"
@@ -44,7 +44,7 @@ services:
   web:
     image: ghcr.io/konradcinkusz/agenthelm-web:latest
     ports:
-      - "5200:8080"
+      - "5300:8080"
     environment:
       Bridge__BaseUrl: "http://bridge:5199"
       Bridge__ApiToken: "dev-secret-123"

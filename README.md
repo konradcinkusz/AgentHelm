@@ -55,7 +55,7 @@ curl.exe -O https://raw.githubusercontent.com/konradcinkusz/agenthelm/master/doc
 docker compose -f docker-compose.ghcr.yml up
 ```
 
-UI at **http://localhost:5200** · Bridge API at **http://localhost:5199**.
+UI at **http://localhost:5300** · Bridge API at **http://localhost:5299**.
 
 One-time setup after the first workflow run: GHCR packages start private —
 switch each package to **public** (GitHub → Packages → package → Settings)
