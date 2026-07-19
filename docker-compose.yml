@@ -1,7 +1,7 @@
 # Build-and-run from source: Bridge + Web + Postgres.
 #   docker compose up --build
-#   UI:     http://localhost:5200
-#   Bridge: http://localhost:5199  (x-helm-token: dev-secret-123)
+#   UI:     http://localhost:5300
+#   Bridge: http://localhost:5299  (x-helm-token: dev-secret-123)
 #
 # Note: ACP agents (Copilot CLI, Claude Code, Gemini) are NOT available inside
 # containers — they need your local environment and auth. The built-in echo
@@ -26,7 +26,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "5199:5199"
+      - "5299:5199"
     environment:
       ConnectionStrings__helmdb: "Host=postgres;Database=helmdb;Username=helm;Password=helm-dev"
       AgentHelm__ApiToken: "dev-secret-123"
@@ -40,7 +40,7 @@ services:
       context: .
       dockerfile: Dockerfile.web
     ports:
-      - "5200:8080"
+      - "5300:8080"
     environment:
       Bridge__BaseUrl: "http://bridge:5199"
       Bridge__ApiToken: "dev-secret-123"
