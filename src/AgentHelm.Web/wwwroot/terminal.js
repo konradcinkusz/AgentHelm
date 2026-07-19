@@ -1,3 +1,18 @@
+// Local filesystem helpers (File System Access API).
+window.helmFs = {
+  supportsLocalPicker() {
+    return typeof window.showDirectoryPicker === 'function';
+  },
+  async openLocalDirPicker() {
+    try {
+      const handle = await window.showDirectoryPicker({ mode: 'read' });
+      return handle.name;
+    } catch {
+      return null; // cancelled or permission denied
+    }
+  }
+};
+
 // Minimal xterm.js host for AgentHelm. The terminal is a renderer only:
 // input goes through the Blazor input box (there is no PTY server-side, so
 // per-keystroke echo would be misleading). convertEol maps \n to \r\n.
