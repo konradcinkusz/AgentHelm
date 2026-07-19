@@ -366,6 +366,12 @@
 {
     <div class="dir-overlay" @onclick="CloseBrowse">
         <div class="dir-dialog" @onclick:stopPropagation>
+            @if (!string.IsNullOrEmpty(_browseLocalName))
+            {
+                <div class="dir-local-hint">
+                    📍 Local: <strong>@_browseLocalName</strong> — Navigate to where this folder is mounted on the Bridge server
+                </div>
+            }
             <div class="dir-dialog-head">
                 <span class="rail-label">Browse Directory</span>
                 <label class="dir-hidden-toggle">

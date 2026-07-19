@@ -66,6 +66,7 @@ public partial class Home : IDisposable
     private string[] _browseDirs = [];
     private bool _browseLoading;
     private bool _browseShowHidden;
+    private string? _browseLocalName;
 
     // preconfiguration panel
     private bool _showPreconfig;
@@ -404,9 +405,28 @@ public partial class Home : IDisposable
 
     private async Task OpenBrowseAsync()
     {
+        // Try native browser dir picker first (shows LOCAL filesystem).
+        bool supportsLocal = false;
+        try { supportsLocal = await JS.InvokeAsync<bool>("helmFs.supportsLocalPicker"); } catch { }
+
+        if (supportsLocal)
+        {
+            string? localName = null;
+            try { localName = await JS.InvokeAsync<string?>("helmFs.openLocalDirPicker"); } catch { }
+            if (localName is not null)
+            {
+                // User picked a local dir — open server browser with a hint so they can find the mount point.
+                _browseLocalName = localName;
+                _browseOpen = true;
+                await NavigateBrowseAsync(string.IsNullOrWhiteSpace(_newCwd) ? null : _newCwd.Trim());
+                return;
+            }
+            // Cancelled — fall through to server browser.
+        }
+
+        _browseLocalName = null;
         _browseOpen = true;
-        var startPath = string.IsNullOrWhiteSpace(_newCwd) ? null : _newCwd.Trim();
-        await NavigateBrowseAsync(startPath);
+        await NavigateBrowseAsync(string.IsNullOrWhiteSpace(_newCwd) ? null : _newCwd.Trim());
     }
 
     private async Task NavigateBrowseAsync(string? path)
@@ -441,9 +461,14 @@ public partial class Home : IDisposable
     {
         _newCwd = _browsePath;
         _browseOpen = false;
+        _browseLocalName = null;
     }
 
-    private void CloseBrowse() => _browseOpen = false;
+    private void CloseBrowse()
+    {
+        _browseOpen = false;
+        _browseLocalName = null;
+    }
 
     // --------------------------------------------------- preconfiguration
 
