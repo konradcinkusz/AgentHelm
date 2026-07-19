@@ -410,7 +410,10 @@ public sealed class SessionManager(AgentCatalog catalog, ILoggerFactory loggerFa
         var spec = catalog.Find(agentId)
             ?? throw new ArgumentException($"Unknown agent '{agentId}'. Configure it under AgentHelm:Agents.");
         if (!Directory.Exists(cwd))
-            throw new ArgumentException($"Working directory does not exist: {cwd}");
+            throw new ArgumentException(
+                $"Working directory does not exist: {cwd}. " +
+                "The path must be accessible on the Bridge server (the machine running AgentHelm.Bridge), not the browser's machine. " +
+                "Running Bridge in Docker? Add a volumes: entry in docker-compose (e.g. - C:\\Repos:/repos) and use the container path (/repos/myproject).");
 
         var logger = loggerFactory.CreateLogger($"agent.{agentId}");
         IAgentAdapter adapter = BuildAdapter(spec, cwd, logger, resumeNativeSessionId, model);
