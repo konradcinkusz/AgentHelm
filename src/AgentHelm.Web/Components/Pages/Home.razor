@@ -30,7 +30,7 @@
             @if (_showNewSession)
             {
                 <div class="new-session">
-                    <select @bind="_newAgentId">
+                    <select value="@_newAgentId" @onchange="OnNewAgentChangedAsync">
                         @foreach (var agent in _agents)
                         {
                             <option value="@agent.Id">@agent.Name</option>
@@ -42,7 +42,19 @@
                     </div>
                     <div class="term-note">Path on the Bridge server. Docker users: add <code>volumes:</code> to docker-compose (e.g. <code>- C:\Repos:/repos</code>) and enter the container path here.</div>
                     <input placeholder="Title (optional)" @bind="_newTitle" />
-                    <input placeholder="Model (optional — SDK agents)" @bind="_newModel" />
+                    @if (_newAgentModels.Count > 0)
+                    {
+                        <select @bind="_newModel" title="Model for this session">
+                            @foreach (var m in _newAgentModels)
+                            {
+                                <option value="@m.Id">@m.Name@(m.IsDefault ? " (default)" : "")</option>
+                            }
+                        </select>
+                    }
+                    else
+                    {
+                        <input placeholder="Model (optional)" @bind="_newModel" />
+                    }
                     <button class="btn preconfig-toggle @(_showPreconfig ? "active" : "")"
                             @onclick="TogglePreconfigAsync">⚙ Pre-config</button>
                     @if (_showPreconfig)

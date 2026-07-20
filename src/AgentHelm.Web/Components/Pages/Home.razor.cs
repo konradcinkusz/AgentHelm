@@ -31,6 +31,7 @@ public partial class Home : IDisposable
     private string _newCwd = "";
     private string? _newTitle;
     private string? _newModel;
+    private List<ProviderModelDto> _newAgentModels = [];
     private bool _creating;
     private string? _createError;
     private string _prompt = "";
@@ -91,7 +92,23 @@ public partial class Home : IDisposable
         _agents = await Bridge.GetAgentsAsync(_pageCts.Token);
         _newAgentId = _agents.FirstOrDefault()?.Id ?? "";
         _sessions = await Bridge.GetSessionsAsync(_pageCts.Token);
+        await LoadAgentModelsAsync(_newAgentId);
         _ = PollSessionListAsync();
+    }
+
+    private async Task OnNewAgentChangedAsync(ChangeEventArgs e)
+    {
+        _newAgentId = e.Value?.ToString() ?? "";
+        _newModel = null;
+        await LoadAgentModelsAsync(_newAgentId);
+    }
+
+    private async Task LoadAgentModelsAsync(string agentId)
+    {
+        _newAgentModels = await Bridge.GetProviderModelsAsync(agentId, _pageCts.Token);
+        // Pre-select the default model if any.
+        _newModel = _newAgentModels.FirstOrDefault(m => m.IsDefault)?.Id
+                    ?? _newAgentModels.FirstOrDefault()?.Id;
     }
 
     /// <summary>The rail refreshes on a slow poll; the open session is fully live via SSE.</summary>
