@@ -5,6 +5,9 @@ using System.Text.RegularExpressions;
 
 namespace AgentHelm.Bridge.Providers;
 
+/// <summary>One model available to a provider (e.g. returned by GitHub's /copilot/models API).</summary>
+public record ProviderModel(string Id, string Name, bool IsDefault);
+
 /// <summary>Account status for one configured AI provider (copilot, claude, gemini).</summary>
 public record ProviderInfo(
     string Id,
@@ -99,6 +102,49 @@ public sealed class ProviderAccountService
         }
         catch { }
         return new("gemini", name, null, "logged_out", "gemini auth", null);
+    }
+
+    // ---- Model listing ----
+
+    /// <summary>
+    /// Returns available models for the given provider.
+    /// For GitHub Copilot this calls "gh api /copilot/models" using the local gh CLI auth.
+    /// Returns an empty list when the provider has no model API or gh is not authenticated.
+    /// </summary>
+    public async Task<List<ProviderModel>> GetModelsAsync(string agentId, CancellationToken ct = default)
+    {
+        if (agentId == "copilot") return await GetCopilotModelsAsync(ct);
+        return [];
+    }
+
+    private static async Task<List<ProviderModel>> GetCopilotModelsAsync(CancellationToken ct)
+    {
+        var psi = new ProcessStartInfo("gh", "api /copilot/models")
+        {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+        };
+        try
+        {
+            using var proc = Process.Start(psi);
+            if (proc is null) return [];
+            var output = await proc.StandardOutput.ReadToEndAsync(ct);
+            await proc.WaitForExitAsync(ct);
+            if (proc.ExitCode != 0) return [];
+
+            using var doc = JsonDocument.Parse(output);
+            if (!doc.RootElement.TryGetProperty("data", out var data)) return [];
+
+            return data.EnumerateArray()
+                .Select(m => new ProviderModel(
+                    m.TryGetProperty("id", out var id)     ? id.GetString()   ?? "" : "",
+                    m.TryGetProperty("name", out var nm)   ? nm.GetString()   ?? "" : "",
+                    m.TryGetProperty("isDefault", out var d) && d.GetBoolean()))
+                .Where(m => m.Id.Length > 0)
+                .ToList();
+        }
+        catch { return []; }
     }
 
     // ---- Login process management ----

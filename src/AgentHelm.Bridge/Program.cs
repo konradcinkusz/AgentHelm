@@ -363,6 +363,12 @@ api.MapGet("/providers", () =>
         .Where(p => p is not null)
         .ToList());
 
+api.MapGet("/providers/{id}/models", async (string id, CancellationToken ct) =>
+{
+    if (catalog.Find(id) is null) return Results.NotFound();
+    return Results.Ok(await providers.GetModelsAsync(id, ct));
+});
+
 api.MapPost("/providers/{id}/login/start", (string id) =>
 {
     if (catalog.Find(id) is not { } agent) return Results.NotFound();

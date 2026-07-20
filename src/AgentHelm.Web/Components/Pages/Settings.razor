@@ -45,6 +45,21 @@
                         <div class="provider-account">@p.Account</div>
                     }
 
+                    @if (_models.TryGetValue(p.Id, out var models) && models.Count > 0)
+                    {
+                        <div class="provider-models">
+                            <span class="provider-cmd-label">Available models</span>
+                            <div class="model-list">
+                                @foreach (var m in models)
+                                {
+                                    <span class="model-chip @(m.IsDefault ? "model-chip-default" : "")">
+                                        @m.Name@(m.IsDefault ? " ✓" : "")
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    }
+
                     <div class="provider-actions">
                         @if (p.Status != "logged_in" && p.LoginCommand is not null)
                         {

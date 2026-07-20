@@ -49,6 +49,8 @@ public sealed record ProviderInfoDto(
     string Id, string Name, string? Account, string Status,
     string? LoginCommand, string? LogoutCommand);
 
+public sealed record ProviderModelDto(string Id, string Name, bool IsDefault);
+
 public sealed record ProviderLoginEventDto(string Kind, string? Text, int? ExitCode);
 
 public sealed class BridgeClient
@@ -239,6 +241,12 @@ public sealed class BridgeClient
     public async Task<List<ProviderInfoDto>> GetProvidersAsync(CancellationToken ct = default)
     {
         try { return await _http.GetFromJsonAsync<List<ProviderInfoDto>>("/api/providers", Json, ct) ?? []; }
+        catch { return []; }
+    }
+
+    public async Task<List<ProviderModelDto>> GetProviderModelsAsync(string id, CancellationToken ct = default)
+    {
+        try { return await _http.GetFromJsonAsync<List<ProviderModelDto>>($"/api/providers/{id}/models", Json, ct) ?? []; }
         catch { return []; }
     }
 

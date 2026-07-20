@@ -350,6 +350,19 @@ body {
 .login-log-line { white-space: pre-wrap; word-break: break-all; color: var(--text); }
 .login-log-line:first-child { color: var(--copper); }
 
+.provider-models { display: flex; flex-direction: column; gap: 6px; }
+.model-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.model-chip {
+  font-family: var(--mono); font-size: 11px;
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 6px; padding: 4px 10px; color: var(--dim);
+}
+.model-chip-default {
+  color: var(--copper);
+  border-color: color-mix(in srgb, var(--copper) 50%, transparent);
+  background: color-mix(in srgb, var(--copper) 8%, var(--panel-2));
+}
+
 .provider-cmd {
   display: flex; flex-direction: column; gap: 4px;
   border-top: 1px solid var(--line); padding-top: 10px;

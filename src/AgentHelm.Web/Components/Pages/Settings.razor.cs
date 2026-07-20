@@ -6,6 +6,7 @@ namespace AgentHelm.Web.Components.Pages;
 public partial class Settings : IDisposable
 {
     private List<ProviderInfoDto> _providers = [];
+    private Dictionary<string, List<ProviderModelDto>> _models = new();
     private bool _loading = true;
     private string? _loggingOut;
 
@@ -23,6 +24,15 @@ public partial class Settings : IDisposable
         _loading = true;
         StateHasChanged();
         _providers = await Bridge.GetProvidersAsync();
+
+        // Load models for each logged-in provider that supports model listing.
+        _models.Clear();
+        foreach (var p in _providers.Where(p => p.Status == "logged_in"))
+        {
+            var list = await Bridge.GetProviderModelsAsync(p.Id);
+            if (list.Count > 0) _models[p.Id] = list;
+        }
+
         _loading = false;
         StateHasChanged();
     }
