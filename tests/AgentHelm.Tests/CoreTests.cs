@@ -930,10 +930,10 @@ public class ScopeIntegrationTests
         var now = DateTimeOffset.UtcNow;
         var sessions = new List<AgentHelm.Bridge.Integrations.ScopeSessionScore>
         {
-            new("in-1", null, 90, null, null, now.AddMinutes(-5)),
-            new("in-2", null, 80, null, null, now.AddMinutes(-1)),
-            new("too-old", null, 70, null, null, now.AddHours(-3)),
-            new("timeless", null, 60, null, null, null),
+            new("in-1", null, null, 90, null, null, now.AddMinutes(-5)),
+            new("in-2", null, null, 80, null, null, now.AddMinutes(-1)),
+            new("too-old", null, null, 70, null, null, now.AddHours(-3)),
+            new("timeless", null, null, 60, null, null, null),
         };
 
         var matches = AgentHelm.Bridge.Integrations.ScopeClient.Correlate(

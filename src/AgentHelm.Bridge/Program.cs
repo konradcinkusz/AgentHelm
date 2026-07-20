@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.Text.Json;
+using AgentHelm.Bridge.Providers;
 using AgentHelm.Bridge.Sessions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +14,7 @@ builder.Services.AddSingleton<AgentHelm.Bridge.Workbench.IGitRunner, AgentHelm.B
 builder.Services.AddSingleton<AgentHelm.Bridge.Workbench.GitService>();
 builder.Services.AddSingleton<AgentHelm.Bridge.Workbench.TerminalManager>();
 builder.Services.AddSingleton<AgentHelm.Bridge.Integrations.ScopeClient>();
+builder.Services.AddSingleton<ProviderAccountService>();
 
 // Persistence (optional — degrades to memory-only when no connection string).
 var helmDbConnection = builder.Configuration.GetConnectionString("helmdb");
@@ -48,6 +51,7 @@ var persistence = app.Services.GetService<AgentHelm.Bridge.Persistence.Persisten
 var git = app.Services.GetRequiredService<AgentHelm.Bridge.Workbench.GitService>();
 var terminals = app.Services.GetRequiredService<AgentHelm.Bridge.Workbench.TerminalManager>();
 var scope = app.Services.GetRequiredService<AgentHelm.Bridge.Integrations.ScopeClient>();
+var providers = app.Services.GetRequiredService<ProviderAccountService>();
 var api = app.MapGroup("/api");
 
 api.MapGet("/agents", () => Results.Ok(catalog.All.Select(a => new { a.Id, a.Name })));
@@ -350,6 +354,75 @@ api.MapPost("/config/scope-url", (ScopeUrlRequest req) =>
         return Results.BadRequest(new { error = "URL is required." });
     scope.UpdateBaseUrl(req.Url.Trim());
     return Results.Ok(new { scopeUrl = scope.BaseUrl });
+});
+
+// ----------------------------------------- provider account / login APIs
+api.MapGet("/providers", () =>
+    catalog.All
+        .Select(a => providers.GetInfo(a.Id, a.Name))
+        .Where(p => p is not null)
+        .ToList());
+
+api.MapGet("/providers/{id}/models", async (string id, CancellationToken ct) =>
+{
+    if (catalog.Find(id) is null) return Results.NotFound();
+    return Results.Ok(await providers.GetModelsAsync(id, ct));
+});
+
+api.MapPost("/providers/{id}/login/start", (string id) =>
+{
+    if (catalog.Find(id) is not { } agent) return Results.NotFound();
+    if (providers.GetInfo(id, agent.Name)?.LoginCommand is not { } cmd)
+        return Results.BadRequest(new { error = "No login command configured for this provider." });
+    providers.StartLogin(id, cmd);
+    return Results.Ok(new { started = true });
+});
+
+api.MapGet("/providers/{id}/login/stream", async (string id, HttpContext ctx, CancellationToken ct) =>
+{
+    if (providers.GetLogin(id) is not { } login) { ctx.Response.StatusCode = 404; return; }
+    ctx.Response.Headers.ContentType = "text/event-stream";
+    ctx.Response.Headers.CacheControl = "no-cache";
+    await foreach (var line in login.StreamAsync(ct))
+    {
+        await ctx.Response.WriteAsync($"data: {JsonSerializer.Serialize(new { kind = "output", text = line })}\n\n", ct);
+        await ctx.Response.Body.FlushAsync(ct);
+    }
+    if (!ct.IsCancellationRequested)
+    {
+        await ctx.Response.WriteAsync($"data: {JsonSerializer.Serialize(new { kind = "done", exitCode = login.ExitCode })}\n\n", ct);
+        await ctx.Response.Body.FlushAsync(ct);
+    }
+});
+
+api.MapPost("/providers/{id}/logout", async (string id, CancellationToken ct) =>
+{
+    if (catalog.Find(id) is not { } agent) return Results.NotFound();
+    var info = providers.GetInfo(id, agent.Name);
+    if (info?.LogoutCommand is not { } cmd)
+        return Results.BadRequest(new { error = "No logout command configured for this provider." });
+
+    var parts = cmd.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+    var psi = new ProcessStartInfo(parts[0], parts.Length > 1 ? parts[1] : "")
+    {
+        RedirectStandardOutput = true,
+        RedirectStandardError = true,
+        UseShellExecute = false,
+    };
+    try
+    {
+        using var proc = Process.Start(psi);
+        if (proc is null) return Results.Problem("Failed to start logout process.");
+        await proc.WaitForExitAsync(ct);
+        providers.ClearLogin(id);
+        return proc.ExitCode == 0
+            ? Results.Ok(new { success = true })
+            : Results.Problem($"Logout exited with code {proc.ExitCode}.");
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Logout failed: {ex.Message}");
+    }
 });
 
 logger.LogInformation("""

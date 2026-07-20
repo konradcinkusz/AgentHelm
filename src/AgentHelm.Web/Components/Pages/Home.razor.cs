@@ -31,6 +31,7 @@ public partial class Home : IDisposable
     private string _newCwd = "";
     private string? _newTitle;
     private string? _newModel;
+    private List<ProviderModelDto> _newAgentModels = [];
     private bool _creating;
     private string? _createError;
     private string _prompt = "";
@@ -79,6 +80,7 @@ public partial class Home : IDisposable
     private string? _handoffError;
     private bool _scopeOpen;
     private ScopeResultDto? _scope;
+    private string? _scopeModel; // model name from the best-matching Scope session
     private bool _editingTitle;
     private string _titleDraft = "";
 
@@ -90,7 +92,23 @@ public partial class Home : IDisposable
         _agents = await Bridge.GetAgentsAsync(_pageCts.Token);
         _newAgentId = _agents.FirstOrDefault()?.Id ?? "";
         _sessions = await Bridge.GetSessionsAsync(_pageCts.Token);
+        await LoadAgentModelsAsync(_newAgentId);
         _ = PollSessionListAsync();
+    }
+
+    private async Task OnNewAgentChangedAsync(ChangeEventArgs e)
+    {
+        _newAgentId = e.Value?.ToString() ?? "";
+        _newModel = null;
+        await LoadAgentModelsAsync(_newAgentId);
+    }
+
+    private async Task LoadAgentModelsAsync(string agentId)
+    {
+        _newAgentModels = await Bridge.GetProviderModelsAsync(agentId, _pageCts.Token);
+        // Pre-select the default model if any.
+        _newModel = _newAgentModels.FirstOrDefault(m => m.IsDefault)?.Id
+                    ?? _newAgentModels.FirstOrDefault()?.Id;
     }
 
     /// <summary>The rail refreshes on a slow poll; the open session is fully live via SSE.</summary>
@@ -162,6 +180,7 @@ public partial class Home : IDisposable
         _handoffError = null;
         _scopeOpen = false;
         _scope = null;
+        _scopeModel = null;
         _editingTitle = false;
         _selectedId = id;
         _streamCts?.Cancel();
@@ -394,7 +413,11 @@ public partial class Home : IDisposable
         _ => ""
     };
 
-    private string ModelSuffix() => _detail?.Model is { Length: > 0 } m ? $" · {m}" : "";
+    private string ModelSuffix()
+    {
+        var m = _detail?.Model is { Length: > 0 } dm ? dm : _scopeModel;
+        return m is not null ? $" · {m}" : "";
+    }
 
     private string AttachTitle() =>
         _detail?.Caps is { Image: false, EmbeddedContext: false }
@@ -542,6 +565,8 @@ public partial class Home : IDisposable
         {
             _scope = null;
             _scope = await Bridge.GetScopeAsync(_detail.Id, _pageCts.Token);
+            // Capture the model name from the best-matching Scope session (first = newest).
+            _scopeModel = _scope?.Matches.FirstOrDefault(m => m.Model is not null)?.Model;
         }
     }
 

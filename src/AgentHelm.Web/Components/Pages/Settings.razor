@@ -1,0 +1,106 @@
+@page "/settings"
+@inject BridgeClient Bridge
+
+<PageTitle>AgentHelm — Settings</PageTitle>
+
+<header class="topbar">
+    <h1 class="brand"><a href="/" class="brand-link">Agent<span>Helm</span></a></h1>
+    <nav class="topbar-nav">
+        <a href="/" class="nav-link">Dashboard</a>
+        <a href="/settings" class="nav-link active">Providers</a>
+    </nav>
+</header>
+
+<div class="settings-page">
+    <div class="settings-header">
+        <h2 class="settings-title">Provider Accounts</h2>
+        <p class="settings-sub">Account login status is read from your local machine. Use the login flow to authenticate each provider.</p>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="settings-loading">Loading provider status…</div>
+    }
+    else if (_providers.Count == 0)
+    {
+        <div class="settings-empty">No supported providers configured (copilot, claude, gemini).</div>
+    }
+    else
+    {
+        <div class="provider-grid">
+            @foreach (var p in _providers)
+            {
+                <div class="provider-card">
+                    <div class="provider-top">
+                        <div class="provider-icon">@ProviderIcon(p.Id)</div>
+                        <div class="provider-info">
+                            <div class="provider-name">@p.Name</div>
+                            <div class="provider-id">@p.Id</div>
+                        </div>
+                        <div class="provider-badge @BadgeClass(p.Status)">@BadgeLabel(p.Status)</div>
+                    </div>
+
+                    @if (p.Status == "logged_in" && p.Account is not null)
+                    {
+                        <div class="provider-account">@p.Account</div>
+                    }
+
+                    @if (_models.TryGetValue(p.Id, out var models) && models.Count > 0)
+                    {
+                        <div class="provider-models">
+                            <span class="provider-cmd-label">Available models</span>
+                            <div class="model-list">
+                                @foreach (var m in models)
+                                {
+                                    <span class="model-chip @(m.IsDefault ? "model-chip-default" : "")">
+                                        @m.Name@(m.IsDefault ? " ✓" : "")
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <div class="provider-actions">
+                        @if (p.Status != "logged_in" && p.LoginCommand is not null)
+                        {
+                            <button class="btn primary" @onclick="() => StartLoginAsync(p.Id)"
+                                    disabled="@IsLoggingIn(p.Id)">
+                                @(IsLoggingIn(p.Id) ? "Logging in…" : "Login")
+                            </button>
+                        }
+                        @if (p.Status == "logged_in" && p.LogoutCommand is not null)
+                        {
+                            <button class="btn danger" @onclick="() => LogoutAsync(p.Id)"
+                                    disabled="@(_loggingOut == p.Id)">
+                                @(_loggingOut == p.Id ? "Logging out…" : "Logout")
+                            </button>
+                        }
+                        <button class="btn" @onclick="RefreshAsync">Refresh</button>
+                    </div>
+
+                    @if (_loginLogs.TryGetValue(p.Id, out var log) && log.Count > 0)
+                    {
+                        <div class="login-log">
+                            @foreach (var line in log)
+                            {
+                                <div class="login-log-line">@line</div>
+                            }
+                            @if (IsLoggingIn(p.Id))
+                            {
+                                <div class="login-log-line caret">▌</div>
+                            }
+                        </div>
+                    }
+
+                    @if (p.LoginCommand is not null)
+                    {
+                        <div class="provider-cmd">
+                            <span class="provider-cmd-label">Login command</span>
+                            <code>@p.LoginCommand</code>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>

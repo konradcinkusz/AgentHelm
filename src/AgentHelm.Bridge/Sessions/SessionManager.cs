@@ -81,17 +81,10 @@ public sealed class AcpAdapter : IAgentAdapter
     private readonly string _cwd;
     private readonly ILogger _logger;
     private readonly string? _resumeSessionId;
+    private readonly string? _model;
     private AcpClient? _client;
     private string? _acpSessionId;
 
-    /// <param name="resumeSessionId">
-    /// When set, StartAsync resumes this agent-side session via session/load
-    /// instead of creating a new one (CLI &lt;-&gt; GUI continuity).
-    /// </param>
-    /// <param name="model">
-    /// Stored for parity with the SDK adapter; ACP itself has no model
-    /// negotiation, so agents pick their own default.
-    /// </param>
     public AcpAdapter(AgentSpec spec, string cwd, ILogger logger,
         string? resumeSessionId = null, string? model = null)
     {
@@ -99,7 +92,7 @@ public sealed class AcpAdapter : IAgentAdapter
         _cwd = cwd;
         _logger = logger;
         _resumeSessionId = resumeSessionId;
-        _ = model;
+        _model = model;
     }
 
     public string? NativeSessionId => _acpSessionId;
@@ -124,7 +117,18 @@ public sealed class AcpAdapter : IAgentAdapter
     public async Task StartAsync(CancellationToken ct)
     {
         var (command, args) = ExpandSpecPaths(_spec);
-        var transport = new ProcessTransport(command, args, _cwd, _spec.Environment);
+
+        // Merge a model hint into the environment so the agent can pick it up.
+        // Each CLI uses its own env var; we set what we know and the rest is ignored.
+        var env = new Dictionary<string, string>(_spec.Environment);
+        if (_model is not null)
+        {
+            env["GH_COPILOT_MODEL"] = _model;   // GitHub Copilot CLI
+            env["CLAUDE_MODEL"]     = _model;   // Claude Code CLI
+            env["GEMINI_MODEL"]     = _model;   // Gemini CLI
+        }
+
+        var transport = new ProcessTransport(command, args, _cwd, env);
         transport.StderrLine += line => _logger.LogDebug("[{Agent} stderr] {Line}", _spec.Id, line);
 
         _client = new AcpClient(transport, _cwd, _logger)
