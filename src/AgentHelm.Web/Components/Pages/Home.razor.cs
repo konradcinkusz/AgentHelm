@@ -79,6 +79,7 @@ public partial class Home : IDisposable
     private string? _handoffError;
     private bool _scopeOpen;
     private ScopeResultDto? _scope;
+    private string? _scopeModel; // model name from the best-matching Scope session
     private bool _editingTitle;
     private string _titleDraft = "";
 
@@ -162,6 +163,7 @@ public partial class Home : IDisposable
         _handoffError = null;
         _scopeOpen = false;
         _scope = null;
+        _scopeModel = null;
         _editingTitle = false;
         _selectedId = id;
         _streamCts?.Cancel();
@@ -394,7 +396,11 @@ public partial class Home : IDisposable
         _ => ""
     };
 
-    private string ModelSuffix() => _detail?.Model is { Length: > 0 } m ? $" · {m}" : "";
+    private string ModelSuffix()
+    {
+        var m = _detail?.Model is { Length: > 0 } dm ? dm : _scopeModel;
+        return m is not null ? $" · {m}" : "";
+    }
 
     private string AttachTitle() =>
         _detail?.Caps is { Image: false, EmbeddedContext: false }
@@ -542,6 +548,8 @@ public partial class Home : IDisposable
         {
             _scope = null;
             _scope = await Bridge.GetScopeAsync(_detail.Id, _pageCts.Token);
+            // Capture the model name from the best-matching Scope session (first = newest).
+            _scopeModel = _scope?.Matches.FirstOrDefault(m => m.Model is not null)?.Model;
         }
     }
 

@@ -15,7 +15,7 @@ namespace AgentHelm.Bridge.Integrations;
 // path — tracked as a Beyond-M3 item on both projects.
 
 public sealed record ScopeSessionScore(
-    string Id, string? Title, double? Score, string? Grade, double? Confidence,
+    string Id, string? Title, string? Model, double? Score, string? Grade, double? Confidence,
     DateTimeOffset? LastActivity);
 
 public sealed class ScopeClient
@@ -98,7 +98,8 @@ public sealed class ScopeClient
             if (id is null) continue;
             result.Add(new ScopeSessionScore(
                 id,
-                FirstString(node, "title", "name", "model"),
+                FirstString(node, "title", "name"),
+                FirstString(node, "model", "modelId", "gen_ai.request.model"),
                 FirstDouble(quality, node, "score"),
                 FirstString(quality, "grade") ?? FirstString(node, "grade"),
                 FirstDouble(quality, node, "confidence"),

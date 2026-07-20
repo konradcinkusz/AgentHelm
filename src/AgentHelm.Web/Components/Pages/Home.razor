@@ -222,7 +222,13 @@
                             <div class="scope-row">
                                 <span class="scope-score">@(match.Score is { } sc ? sc.ToString("0") : "—")</span>
                                 <span class="scope-grade">@(match.Grade ?? "")</span>
-                                <span class="scope-meta">@(match.Title ?? match.Id)@(match.Confidence is { } cf ? $" · conf {cf:P0}" : "")</span>
+                                <div class="scope-row-detail">
+                                    @if (match.Model is not null)
+                                    {
+                                        <span class="scope-model">@match.Model</span>
+                                    }
+                                    <span class="scope-meta">@(match.Title ?? match.Id)@(match.Confidence is { } cf ? $" · conf {cf:P0}" : "")</span>
+                                </div>
                             </div>
                         }
                         <div class="term-note">time-based best-effort match — exact correlation needs telemetry tagging (Beyond-M3)</div>

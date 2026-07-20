@@ -26,7 +26,7 @@ public sealed record AttachmentDto(string Kind, string Name, string MimeType, st
 public sealed record AgentCapsDto(bool LoadSession, bool Image, bool Audio, bool EmbeddedContext);
 
 public sealed record ScopeMatchDto(
-    string Id, string? Title, double? Score, string? Grade, double? Confidence,
+    string Id, string? Title, string? Model, double? Score, string? Grade, double? Confidence,
     DateTimeOffset? LastActivity);
 public sealed record ScopeResultDto(bool Available, List<ScopeMatchDto> Matches);
 
