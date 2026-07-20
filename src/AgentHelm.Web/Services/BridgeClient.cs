@@ -45,6 +45,12 @@ public sealed record SessionEventDto(string Kind, string Text, JsonElement? Data
 
 public sealed record DirListDto(string Path, string? Parent, string[] Dirs);
 
+public sealed record ProviderInfoDto(
+    string Id, string Name, string? Account, string Status,
+    string? LoginCommand, string? LogoutCommand);
+
+public sealed record ProviderLoginEventDto(string Kind, string? Text, int? ExitCode);
+
 public sealed class BridgeClient
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
@@ -228,6 +234,45 @@ public sealed class BridgeClient
         _http.PostAsJsonAsync("/api/config/scope-url", new { url }, Json, ct);
 
     private sealed record ScopeConfigDto(string ScopeUrl);
+
+    // -------------------------------------------- provider account / login
+    public async Task<List<ProviderInfoDto>> GetProvidersAsync(CancellationToken ct = default)
+    {
+        try { return await _http.GetFromJsonAsync<List<ProviderInfoDto>>("/api/providers", Json, ct) ?? []; }
+        catch { return []; }
+    }
+
+    public async Task<bool> StartProviderLoginAsync(string id, CancellationToken ct = default)
+    {
+        var resp = await _http.PostAsync($"/api/providers/{id}/login/start", null, ct);
+        return resp.IsSuccessStatusCode;
+    }
+
+    public Task SubscribeProviderLoginAsync(string id, Func<ProviderLoginEventDto, Task> onEvent, CancellationToken ct) =>
+        ReadProviderSseAsync($"/api/providers/{id}/login/stream", onEvent, ct);
+
+    public async Task<bool> LogoutProviderAsync(string id, CancellationToken ct = default)
+    {
+        var resp = await _http.PostAsync($"/api/providers/{id}/logout", null, ct);
+        return resp.IsSuccessStatusCode;
+    }
+
+    private async Task ReadProviderSseAsync(string url, Func<ProviderLoginEventDto, Task> onEvent, CancellationToken ct)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+        if (!response.IsSuccessStatusCode) return;
+        await using var stream = await response.Content.ReadAsStreamAsync(ct);
+        using var reader = new StreamReader(stream);
+        while (!ct.IsCancellationRequested && await reader.ReadLineAsync(ct) is { } line)
+        {
+            if (!line.StartsWith("data: ", StringComparison.Ordinal)) continue;
+            ProviderLoginEventDto? evt = null;
+            try { evt = JsonSerializer.Deserialize<ProviderLoginEventDto>(line["data: ".Length..], Json); }
+            catch (JsonException) { }
+            if (evt is not null) await onEvent(evt);
+        }
+    }
 
     private async Task ReadSseAsync(string url, Func<SessionEventDto, Task> onEvent, CancellationToken ct)
     {
