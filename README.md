@@ -261,21 +261,21 @@ and tracked in [#17](https://github.com/konradcinkusz/AgentHelm/issues/17).
 
 ## Tests
 
-The real test project uses xunit (`tests/AgentHelm.Tests`). The suite (41
-tests) covers the ACP protocol client (framing, streaming order, permission
-round-trips, path guard, error propagation, `session/load` replay, attachment
-content blocks), the session layer (transcript, blocking permission flow with
-audit, event fan-out), the policy engine (kind taxonomy, allow-once
-preference, no-auto-reject invariant, YOLO auditing), the git service
-(porcelain parsing incl. rename token consumption, diff counting, path guard,
+The real test project uses xunit (`tests/AgentHelm.Tests`). The suite covers
+the ACP protocol client (framing, streaming order, permission round-trips,
+path guard, error propagation, `session/load` replay, attachment content
+blocks), the session layer (transcript, blocking permission flow with audit,
+event fan-out), the policy engine (kind taxonomy, allow-once preference,
+no-auto-reject invariant, YOLO auditing), the git service (porcelain parsing
+incl. rename token consumption, diff counting, path guard,
 tracked-vs-untracked reject — plus a real end-to-end test against an actual
 git repo), the terminal (real shell echo round-trips in both pipe and PTY
-mode), agent capability parsing, the adapter factory (clear activation errors
-for `copilot-sdk` without the flag), handoff context building (attribution +
-front-trimming), and the Scope integration (tolerant DTO parsing, time-window
-correlation). The factory tests caught a real bug: the configuration binder
-silently drops agents declared without an `Args` section — fixed by making
-`Args` an init property with a default.
+mode), agent capability parsing, the adapter factory (clear activation
+errors for `copilot-sdk` without the flag), handoff context building
+(attribution + front-trimming), and the Scope integration (tolerant DTO
+parsing, time-window correlation). The factory tests caught a real bug: the
+configuration binder silently drops agents declared without an `Args`
+section — fixed by making `Args` an init property with a default.
 
 ```bash
 dotnet test
