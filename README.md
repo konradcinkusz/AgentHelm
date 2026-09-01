@@ -23,7 +23,7 @@ transcripts, explicit tool permissions, and an audit trail.
 > session, approve the tools, keep the record). Same stack, opposite direction
 > of the arrow.
 
-**[→ Step-by-step tutorial](docs/TUTORIAL.md)** | **[Contributing](CONTRIBUTING.md)**
+**[→ Website](https://konradcinkusz.github.io/AgentHelm/)** | **[Step-by-step tutorial](docs/TUTORIAL.md)** | **[Contributing](CONTRIBUTING.md)**
 
 **Status: M3 (feature-complete for the planned roadmap)** — sessions,
 streamed chat, permission policies (ask / auto-read / YOLO), session resume
