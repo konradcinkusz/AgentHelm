@@ -1,0 +1,54 @@
+# Keeps the two dependency surfaces under observation. Dependabot only opens
+# pull requests; every one still goes through the same `pull_request` CI gate
+# as any other change, so this adds a review queue rather than auto-updates.
+version: 2
+
+updates:
+  # The workflows pin major tags (actions/checkout@v4, setup-dotnet@v4,
+  # configure-pages@v5, deploy-pages@v4, softprops/action-gh-release@v2, the
+  # docker/* actions). Major tags float, so these absorb changes silently and
+  # fall behind just as silently when a new major ships. The Pages deployment
+  # log already warns that several of them target the deprecated Node 20 and
+  # are being force-run on Node 24.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: ci
+    groups:
+      # One PR for all of them: they move together and a runner-image change
+      # tends to affect several at once.
+      actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: deps
+    groups:
+      # Aspire is the version-sensitive one here. README's troubleshooting
+      # section records that the Sdk element version and the Aspire.Hosting.*
+      # package versions "must always be bumped together".
+      #
+      # IMPORTANT: this group covers the <PackageReference> entries only.
+      # AgentHelm.AppHost.csproj also carries
+      #   <Sdk Name="Aspire.AppHost.Sdk" Version="9.3.0" />
+      # which is an MSBuild project-SDK attribute rather than a package
+      # reference. Do not assume a green Aspire PR has moved it -- check that
+      # element by hand and bump it in the same PR, or the pair drifts apart
+      # and the AppHost fails to resolve.
+      aspire:
+        patterns:
+          - "Aspire.*"
+      # Test tooling moves as a set; a runner and its framework disagreeing is
+      # a build break rather than a behaviour change.
+      test:
+        patterns:
+          - "xunit*"
+          - "Microsoft.NET.Test.Sdk"
