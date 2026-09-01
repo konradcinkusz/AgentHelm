@@ -30,7 +30,7 @@ The built-in echo agent works without any external tools, so you can test the fu
 dotnet test
 ```
 
-41 tests covering the ACP client, session layer, policy engine, git service, terminal, agent handoff, Scope integration, and more. All tests should pass before you open a PR.
+The suite covers the ACP client, session layer, policy engine, git service, terminal, agent handoff, Scope integration, and more. All tests should pass before you open a PR.
 
 ## Project layout
 
