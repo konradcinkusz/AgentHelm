@@ -244,6 +244,10 @@ in M1.
 
 ## Roadmap
 
+M0–M3 below are complete. Work after M3 — and what is deliberately out of
+scope, with the blocker on each — is planned in **[ROADMAP.md](ROADMAP.md)**
+and tracked in [#17](https://github.com/konradcinkusz/AgentHelm/issues/17).
+
 | Milestone | Scope |
 |---|---|
 | **M0 — skeleton** ✅ | ACP adapter, sessions, streamed chat, permission gateway + audit, Postgres history, built-in echo agent |
