@@ -201,6 +201,9 @@ and the `Aspire.Hosting.*` package versions must always be bumped together.
 
 ## Security model
 
+Found a hole in one of these boundaries? See [SECURITY.md](SECURITY.md) —
+please report it privately rather than in a public issue.
+
 - Bridge binds to `127.0.0.1` only. Exposing it further is your explicit,
   configured decision (`AgentHelm:Urls`) — never a default.
 - Optional shared token (`AgentHelm:ApiToken` + `x-helm-token` header). Worth
